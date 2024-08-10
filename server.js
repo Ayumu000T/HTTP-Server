@@ -82,6 +82,7 @@ app.post('/filtered-data', upload.single('kmlFile'), async (req, res) => {
         .then(data => {
           const ngrokUrl = data.tunnels[0].public_url;
           const fileUrl = `${ngrokUrl}/uploads/${fileName}`;
+          console.log(`Saved file url: ${fileUrl}`);
           res.status(200).json({ message: 'KML file received and saved', fileUrl: fileUrl });
         })
         .catch(error => {
@@ -93,6 +94,42 @@ app.post('/filtered-data', upload.single('kmlFile'), async (req, res) => {
     res.status(400).json({ message: 'No file received' });
   }
 });
+
+app.use(express.urlencoded({ extended: true }));  
+
+//kml削除// KMLファイル削除処理
+app.post('/delete-kml', async (req, res) => {
+  console.log('Received DELETE request for KML file');
+  console.log('Request body:', req.body);
+
+  // fetchDeleteKmlでったデータ
+  const { kmlFileUrl } = req.body;
+  if (!kmlFileUrl) {
+    return res.status(400).json({ message: 'No URL provided' });
+  }
+
+  // ファイル名をURLから抽出
+  const fileName = path.basename(new URL(kmlFileUrl).pathname);
+  const filePath = path.join(__dirname, 'uploads', fileName);
+
+  try {
+    // ファイルを削除
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        console.error('Error deleting the file:', err);
+        return res.status(500).json({ message: 'Error deleting the file' });
+      }
+      console.log('File deleted successfully');
+      res.status(200).json({ message: 'KML file deleted successfully' });
+    });
+  } catch (error) {
+    console.error('Error handling delete request:', error);
+    res.status(500).json({ message: 'Error handling delete request' });
+  }
+});
+
+
+
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
